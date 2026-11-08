@@ -25,6 +25,7 @@ button,.lien-btn{font:700 16px "Segoe UI",Arial,sans-serif;border-radius:10px;cu
 .envoi{border:0;background:var(--vert);color:#fff;width:100%;font-size:17px}
 .msg{font-size:14px;font-weight:600;color:#b3261e;margin:10px 0 0}
 .ok{color:var(--vert)}
+.date-sig{text-align:center;font-weight:700;font-size:15px;margin:-4px 0 12px}
 #apercu{display:block;max-width:100%;max-height:120px;margin:4px auto 10px;background:#fff}
 [hidden]{display:none!important}
 .pied{text-align:center;font-size:11.5px;color:#7d8a99;margin-top:18px}
@@ -47,7 +48,7 @@ button,.lien-btn{font:700 16px "Segoe UI",Arial,sans-serif;border-radius:10px;cu
   </div>
   <div class="carte" id="zoneEnvoi" hidden>
     <h2>Dernière étape : renvoyer la signature</h2>
-    <img id="apercu" alt="Votre signature">
+    <img id="apercu" alt="Votre signature"><p class="date-sig" id="signeLe"></p>
     <button type="button" class="envoi" id="envoyer">Envoyer ma signature</button>
     <p class="aide">Choisissez <b>WhatsApp, SMS ou mail</b> et envoyez le message <b id="aQui">au formateur</b>. Sa fiche se complétera toute seule en touchant le lien.</p>
     <div class="boutons"><button type="button" class="sec" id="copier">Copier le lien</button><a class="lien-btn sec" id="parSms">SMS</a><a class="lien-btn sec" id="parMail">Mail</a><button type="button" class="sec" id="refaire">Refaire</button></div>
@@ -60,7 +61,7 @@ button,.lien-btn{font:700 16px "Segoe UI",Arial,sans-serif;border-radius:10px;cu
 window.addEventListener('hashchange',function(){location.reload()});
 (function(){
   var $=function(i){return document.getElementById(i)};
-  var CASES={dir:'Validation de la visite – Visa de la Direction'};
+  var CASES={dir:'Validation de la visite – Visa de la Direction',aut:'Autorisation de déplacement – Directeur ou son représentant'};
   function lireB64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new TextDecoder().decode(u)}
   var d=null;try{var m=location.hash.match(/[#&]d=([A-Za-z0-9_-]+)/);if(m)d=JSON.parse(lireB64(m[1]))}catch(e){d=null}
   if(!d||!d.id||!CASES[d.c]||!/^https?:\/\//.test(d.r||'')){$('erreur').hidden=false;return}
@@ -92,7 +93,9 @@ window.addEventListener('hashchange',function(){location.reload()});
     while(bits.length%6)bits.push(0);var s='';for(var i=0;i<bits.length;i+=6){var v=0;for(var j=0;j<6;j++)v=v*2+bits[i+j];s+=A[v]}return s}
   var lienRetour='';
   $('valider').addEventListener('click',function(){var n=traits.reduce(function(a,t){return a+t.length},0);if(!traits.length||n<4){$('msgSigne').hidden=false;return}
-    lienRetour=d.r.replace(/#.*$/,'')+'#retour='+d.id+'.'+d.c+'.'+encoder();
+    var j=new Date(),dd=('0'+j.getDate()).slice(-2),mm=('0'+(j.getMonth()+1)).slice(-2);
+    lienRetour=d.r.replace(/#.*$/,'')+'#retour='+d.id+'.'+d.c+'.'+encoder()+'.'+j.getFullYear()+mm+dd;
+    $('signeLe').textContent='Signé le '+dd+'/'+mm+'/'+j.getFullYear();
     $('apercu').src=cv.toDataURL('image/png');
     var txt='Signature « '+CASES[d.c]+' »'+(d.app?' – '+d.app:'')+(d.date?' ('+d.date+')':'')+' : touchez le lien pour la placer sur la fiche.';
     $('parSms').href='sms:?&body='+encodeURIComponent(txt+' '+lienRetour);
