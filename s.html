@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Signature – Fiche de visite – BTP CFA Grand Est</title>
+<style>
+:root{--bleu:#1b3a5c;--jaune:#f2c200;--trait:#c9d3de;--doux:#55657a;--vert:#1e6b3a}
+*{box-sizing:border-box}
+html,body{margin:0;background:#e8edf3;color:#14213d;font-family:"Segoe UI",Arial,sans-serif;-webkit-text-size-adjust:100%}
+header{background:var(--bleu);border-bottom:5px solid var(--jaune);color:#fff;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+header h1{margin:0;font-size:19px}header p{margin:2px 0 0;font-size:13px;color:#dbe6f2}
+main{max-width:640px;margin:0 auto;padding:14px 14px calc(30px + env(safe-area-inset-bottom,0px))}
+.carte{background:#fff;border:1.5px solid #b9c6d4;border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:0 2px 6px rgba(20,33,61,.08)}
+.carte h2{margin:0 0 10px;font-size:17px;color:var(--bleu)}
+.case{padding:10px 12px;border-radius:10px;background:#e9f6ec;border:1.5px solid #b5dcc0;font-size:15px}.case b{display:block;font-size:17px;color:#14213d}
+.case.aut{background:#fdeee3;border-color:#efc4a6}
+.pad{border:1.5px solid var(--bleu);border-radius:10px;overflow:hidden;background:#fff}
+.pad canvas{display:block;width:100%;aspect-ratio:3/1;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:linear-gradient(#fff 0 78%,#c9d3de 78% 79%,#fff 79%)}
+.aide{font-size:14px;color:var(--doux);margin:8px 0 0;line-height:1.4}
+.boutons{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+button,.btn{font:700 16px "Segoe UI",Arial,sans-serif;border-radius:10px;cursor:pointer;min-height:48px;padding:0 16px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.prim{border:0;background:var(--bleu);color:#fff;flex:1}.sec{border:1.5px solid var(--trait);background:#f4f7fa;color:var(--bleu)}
+.partage{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.partage .btn{border:1.5px solid var(--bleu);background:#fff;color:var(--bleu)}
+.partage .btn.copie{background:var(--vert);border-color:var(--vert);color:#fff}
+.lab{font-weight:700;font-size:16px;margin:4px 0 0}
+.msg{font-size:14px;font-weight:600;color:#b3261e;margin:10px 0 0}
+.ok{color:var(--vert)}
+#apercu{display:block;max-width:100%;max-height:110px;margin:0 auto 4px;background:#fff}
+.date-sig{text-align:center;font-weight:700;font-size:15px;margin:0 0 12px}
+.petit{font-size:14px;min-height:40px;margin-top:14px}
+[hidden]{display:none!important}
+.pied{text-align:center;font-size:11.5px;color:#7d8a99;margin-top:18px}
+</style>
+</head>
+<body>
+<header><h1>Demande de signature</h1><p>Fiche de visite en entreprise – BTP CFA Grand Est</p></header>
+<main>
+  <div class="carte" id="infos" hidden>
+    <div class="case" id="caseBox">Vous signez la case :<b id="caseNom"></b></div>
+    <p class="aide">Le nom de l'apprenti et la date de la visite sont dans le message que vous avez reçu.</p>
+  </div>
+  <div class="carte" id="zoneSigne" hidden>
+    <h2>Votre signature</h2>
+    <div class="pad"><canvas id="c" aria-label="Zone de signature"></canvas></div>
+    <p class="aide">Signez dans le cadre avec le doigt, un stylet ou la souris.</p>
+    <div class="boutons"><button type="button" class="sec" id="effacer">Effacer</button><button type="button" class="prim" id="valider">Valider ma signature</button></div>
+    <p class="msg" id="msgSigne" hidden>Signez dans le cadre avant de valider.</p>
+  </div>
+  <div class="carte" id="zoneEnvoi" hidden>
+    <h2>Dernière étape : renvoyer la signature au formateur</h2>
+    <img id="apercu" alt="Votre signature">
+    <p class="date-sig" id="signeLe"></p>
+    <p class="lab">Partager via :</p>
+    <div class="partage" id="partage"></div>
+    <p class="msg ok" id="msgCopie" hidden>Lien copié : collez-le dans un message au formateur.</p>
+    <p class="aide">Envoyez le message proposé au formateur : sa fiche se complète toute seule quand il touche le lien.</p>
+    <button type="button" class="sec petit" id="refaire">Refaire ma signature</button>
+  </div>
+  <div class="carte" id="bloque" hidden><h2>Lien réservé à la personne qui signe</h2><p>Ce lien de demande a été créé sur cet appareil. On ne peut pas signer à la place de la Direction : envoyez-lui le lien.</p></div>
+  <div class="carte" id="erreur" hidden><h2>Lien incomplet</h2><p>Ce lien de signature n'est pas complet. Demandez au formateur de vous le renvoyer.</p></div>
+  <p class="pied">Rien n'est enregistré sur Internet : la signature part uniquement dans le message que vous envoyez.</p>
+</main>
+<script>
+window.addEventListener('hashchange',function(){location.reload()});
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var CASES={d:'Validation de la visite – Visa de la Direction',a:'Autorisation de déplacement – Directeur ou son représentant'};
+  var COURT={d:'Validation de la visite',a:'Autorisation de déplacement'};
+  var IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+  var MOBILE=false;try{MOBILE=(matchMedia('(pointer:coarse)').matches&&matchMedia('(hover:none)').matches)||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||IOS}catch(e){}
+  var m=location.hash.match(/^#([a-z0-9]{6})-([da])$/);
+  if(!m){$('erreur').hidden=false;return}
+  var id=m[1],c=m[2];
+  /* l'appareil qui a fait la demande ne peut pas signer */
+  try{if(JSON.parse(localStorage.getItem('sig:demandes')||'[]').indexOf(id)>=0){$('bloque').hidden=false;return}}catch(e){}
+  $('caseNom').textContent=CASES[c];if(c==='a')$('caseBox').classList.add('aut');
+  $('infos').hidden=false;$('zoneSigne').hidden=false;
+  var base=location.href.replace(/#.*$/,'').replace(/[^/]*$/,'');
+
+  /* tracé : points ramenés sur 1000 × 333 */
+  var cv=$('c'),ctx,traits=[],cur=null,dessin=false;
+  function prep(){var r=cv.getBoundingClientRect(),dpr=Math.min(3,window.devicePixelRatio||1);cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);
+    ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#14213d';ctx.lineWidth=2.6;redessiner()}
+  function redessiner(){var r=cv.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);traits.forEach(function(t){trace(t,r.width/1000,r.height/333)})}
+  function trace(t,sx,sy){ctx.beginPath();ctx.moveTo(t[0][0]*sx,t[0][1]*sy);if(t.length===1){ctx.arc(t[0][0]*sx,t[0][1]*sy,1.2,0,7);ctx.fillStyle='#14213d';ctx.fill();return}
+    for(var i=1;i<t.length;i++){var a=t[i-1],b=t[i];ctx.quadraticCurveTo(a[0]*sx,a[1]*sy,(a[0]+b[0])/2*sx,(a[1]+b[1])/2*sy)}ctx.stroke()}
+  function pt(e){var r=cv.getBoundingClientRect();return[Math.max(0,Math.min(1000,Math.round((e.clientX-r.left)/r.width*1000))),Math.max(0,Math.min(333,Math.round((e.clientY-r.top)/r.height*333)))]}
+  cv.addEventListener('pointerdown',function(e){e.preventDefault();cv.setPointerCapture(e.pointerId);dessin=true;cur=[pt(e)];traits.push(cur);redessiner();$('msgSigne').hidden=true});
+  cv.addEventListener('pointermove',function(e){if(!dessin)return;e.preventDefault();var evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+    evs.forEach(function(ev){var p=pt(ev),l=cur[cur.length-1];if(Math.abs(p[0]-l[0])+Math.abs(p[1]-l[1])>=6)cur.push(p)});redessiner()});
+  ['pointerup','pointercancel','pointerleave'].forEach(function(t){cv.addEventListener(t,function(){dessin=false})});
+  window.addEventListener('resize',prep);prep();
+  $('effacer').addEventListener('click',function(){traits=[];redessiner()});
+
+  /* tracé -> texte court : '0'+dx(5)+dy(5) | '10'+x(10)+y(9) | '11'+x(10)+y(9) nouveau trait */
+  var B='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  function encoder(){var bits=[];function pousse(v,n){for(var i=n-1;i>=0;i--)bits.push((v>>i)&1)}
+    traits.forEach(function(t){var p=null;t.forEach(function(q,i){
+      if(i===0){bits.push(1,1);pousse(q[0],10);pousse(q[1],9)}
+      else{var dx=q[0]-p[0],dy=q[1]-p[1];if(dx>=-16&&dx<=15&&dy>=-16&&dy<=15){bits.push(0);pousse(dx&31,5);pousse(dy&31,5)}else{bits.push(1,0);pousse(q[0],10);pousse(q[1],9)}}
+      p=q})});
+    while(bits.length%6)bits.push(0);var s='';for(var i=0;i<bits.length;i+=6){var v=0;for(var j=0;j<6;j++)v=v*2+bits[i+j];s+=B[v]}return s}
+  function deux(n){return ('0'+n).slice(-2)}
+  var lienRetour='',texte='',titre='';
+  function bouton(nom,href,fn){var b;if(href){b=document.createElement('a');b.href=href;if(/^https:/.test(href)){b.target='_blank';b.rel='noopener'}}
+    else{b=document.createElement('button');b.type='button';b.addEventListener('click',function(){fn(b)})}b.className='btn';b.textContent=nom;$('partage').appendChild(b)}
+  function copier(b){var t=texte+'\n'+lienRetour;function fin(){b.classList.add('copie');b.textContent='Lien copié ✓';$('msgCopie').hidden=false;setTimeout(function(){b.classList.remove('copie');b.textContent='Copier le lien'},3000)}
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject()).then(fin,function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove();fin()})}
+  $('valider').addEventListener('click',function(){var n=traits.reduce(function(a,t){return a+t.length},0);if(!traits.length||n<3){$('msgSigne').hidden=false;return}
+    var j=new Date(),dd=deux(j.getDate()),mm=deux(j.getMonth()+1),aa=j.getFullYear();
+    lienRetour=base+'#r='+id+'.'+c+'.'+aa+mm+dd+'.'+encoder();
+    texte='Signature « '+COURT[c]+' » faite le '+dd+'/'+mm+'/'+aa+'. Touchez le lien pour la placer sur la fiche :';
+    titre='Signature – '+COURT[c];
+    $('apercu').src=cv.toDataURL('image/png');$('signeLe').textContent='Signé le '+dd+'/'+mm+'/'+aa;
+    var tout=texte+'\n'+lienRetour;$('partage').innerHTML='';$('msgCopie').hidden=true;
+    if(MOBILE){
+      if(navigator.share)bouton('Applis du téléphone',null,function(){navigator.share({title:titre,text:texte,url:lienRetour}).catch(function(){})});
+      bouton('WhatsApp','https://wa.me/?text='+encodeURIComponent(tout));
+      bouton('SMS','sms:?&body='+encodeURIComponent(tout));
+      bouton('Mail','mailto:?subject='+encodeURIComponent(titre)+'&body='+encodeURIComponent(texte+'\r\n\r\n'+lienRetour));
+    }else{
+      bouton('WhatsApp Web','https://web.whatsapp.com/send?text='+encodeURIComponent(tout));
+      bouton('WhatsApp (appli)','whatsapp://send?text='+encodeURIComponent(tout));
+      bouton('Mail (Outlook Web)','https://outlook.office.com/mail/deeplink/compose?subject='+encodeURIComponent(titre)+'&body='+encodeURIComponent(texte+'\n\n'+lienRetour));
+    }
+    bouton('Copier le lien',null,copier);
+    $('zoneSigne').hidden=true;$('zoneEnvoi').hidden=false;window.scrollTo(0,0)});
+  $('refaire').addEventListener('click',function(){$('zoneEnvoi').hidden=true;$('zoneSigne').hidden=false;setTimeout(prep,0)});
+})();
+</script>
+</body>
+</html>
